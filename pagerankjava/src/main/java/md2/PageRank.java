@@ -43,6 +43,9 @@ public class PageRank {
         {
             mos = new MultipleOutputs(context);
         }
+        public void cleanup(Context context) throws IOException, InterruptedException{
+           mos.close(); 
+       }
         public void reduce(Text key, Iterable<Text> values,
             Context context
             ) throws IOException, InterruptedException {
@@ -86,22 +89,28 @@ public class PageRank {
                     if(check[i]==true)
                         totalnode++;
                 }
+                String out="";
+                
                 for(int i=0;i<=MaxNode;i++)
                 {
                     if(check[i]==true)
                     {
-                        K = new Text(String.valueOf(i));
-                        V = new Text(new Float(1.0f/((float)totalnode)).toString());
-                        mos.write("vector",K,V,"vector");
+                        String Ks,Vs;
+                        Ks = String.valueOf(i);
+                        Vs = new Float(1.0f/((float)totalnode)).toString();
+                        out+=(Ks+","+Vs+",");
+                       
                     }
                     
                 }
+
+                K = new Text(out.substring(0,out.length()-1));
+                V = new Text(" ");
+                 mos.write("vector",K,V,"vector");
             }
             
         }
-        public void cleanup(Context context) throws IOException, InterruptedException{
-           mos.close(); 
-       }
+        
    }
 
    public static void main(String[] args) throws Exception {
@@ -125,6 +134,13 @@ public class PageRank {
     MultipleOutputs.addNamedOutput(job,"vector",TextOutputFormat.class,Text.class,Text.class);
     FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
     FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    // System.exit(job.waitForCompletion(true) ? 0 : 1);
+    job.waitForCompletion(true);
+    // for(int i=1;i<=20;i++)
+    // {
+         MatVecMulti.main(1);
+    // }
+
+    System.exit(0);
 }
 }

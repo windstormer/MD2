@@ -12,7 +12,11 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 public class MatVecMulti {
@@ -25,7 +29,7 @@ public class MatVecMulti {
         String[] itr = value.toString().split(",");
 
         String temp = itr[0];
-        context.write(new Text(itr[0]),new Text(itr[1]+","+itr[2]));
+        context.write(new Text(itr[0]),new Text("M"+","+itr[1]+","+itr[2]));
         
     }
 }
@@ -36,70 +40,92 @@ public class MatVecMulti {
     public void map(Object key,  Text value, Context context
                     ) throws IOException, InterruptedException {
         String[] itr = value.toString().split(",");
-        int size = itr.length;
-        for(int i=0;i<itr.length;i++)
+        for(int i=0;i<itr.length-1;i+=2)
         {
-            for(int j=0;j<itr.length;j++)
+            for(int j=0;j<itr.length-1;j+=2)
             {
-                context.write(new Text(String.valueOf(j)),new Text(String.valueOf(i)+","+itr[i]));
+                context.write(new Text(itr[j]),new Text("R"+","+itr[i]+","+itr[i+1]));
             }
         }
+        
         
     }
 }
 
 
-public static class IntSumReducer
+public static class MultiReducer
         extends Reducer<Text,Text,Text,Text> {
     private Text word;
+    MultipleOutputs mos;
+    public void setup(Context context)
+        {
+            mos = new MultipleOutputs(context);
+        }
+        public void cleanup(Context context) throws IOException, InterruptedException{
+           mos.close(); 
+       }
     public void reduce(Text key, Iterable<Text> values,
                         Context context
                         ) throws IOException, InterruptedException {
         String[] splitVal;
-        ArrayList<String[]> M = new ArrayList<String[]>();
-        ArrayList<String[]> N = new ArrayList<String[]>();
-        int sum = 0;
+        
+
+        String[] M = new String[50000];
+        String[] R = new String[50000];
+        int Mindex=0;
         for (Text val : values) {
             splitVal = val.toString().split(",");
-            if(splitVal[0].equals("M"))
-                M.add(splitVal);
-            else if(splitVal[0].equals("N"))
-                N.add(splitVal);
-        }
-        for(String[] m : M)
-        {
-            for(String[] n : N)
+            if(splitVal[0].equals("R"))
             {
-                if(Integer.parseInt(m[1])==Integer.parseInt(n[1]))
-                {
-                    sum += (Integer.parseInt(m[2])*Integer.parseInt(n[2]));
-                }
+
+                R[Integer.parseInt(splitVal[1])]=splitVal[2];
+            }else if(splitVal[0].equals("M"))
+            {
+                M[Integer.parseInt(splitVal[1])]=splitVal[2];
+                if(Mindex < Integer.parseInt(splitVal[1]))
+                    Mindex = Integer.parseInt(splitVal[1]);
+            }
+
+        }
+        String s="";
+        float sum = 0.0f;
+        for(int i=0;i<=Mindex;i++)
+        {
+            // s+=String.valueOf(i)+":"+M[i]+"|"+R[i]+", ";
+            if(M[i]!=null)
+            {
+                
+                 sum+=Float.parseFloat(M[i])*Float.parseFloat(R[i]);
             }
         }
-        word = new Text(String.valueOf(sum));
-        context.write(key, word);
+
+        word = new Text(Float.toString(sum*0.8f));
+
+        // word = new Text(s.substring(0,s.length()-1));
+        mos.write("vector",key, word,"vector");
     }
 }
 
-public static void main(String[] args) throws Exception {
+
+public static int main(int index) throws Exception {
     Configuration conf = new Configuration();
-    String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-    if (otherArgs.length != 2) {
-        System.err.println("Usage: wordcount <in> <out>");
-        System.exit(2);
-    }
-        conf.set("mapred.textoutputformat.separator", ",");
-    Job job = new Job(conf, "word count");
+    conf.set("mapred.textoutputformat.separator", ",");
+    Job job = new Job(conf, "Matrix Vector Multiplication");
+    Path inPath1 = new Path("/user/root/output/out1/matrix-r-00000");
+    Path inPath2 = new Path("/user/root/output/out"+String.valueOf(index)+"/vector-r-00000");
     job.setJarByClass(MatVecMulti.class);
     job.setMapperClass(MatrixMapper.class);
-    //job.setCombinerClass(IntSumReducer.class);
+    job.setMapperClass(VectorMapper.class);
     job.setMapOutputKeyClass(Text.class);
     job.setMapOutputValueClass(Text.class);
-    job.setReducerClass(IntSumReducer.class);
+    job.setReducerClass(MultiReducer.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
-    FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
-    FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+
+    MultipleInputs.addInputPath(job,inPath1,TextInputFormat.class, MatrixMapper.class);
+    MultipleInputs.addInputPath(job,inPath2,TextInputFormat.class, VectorMapper.class);
+    MultipleOutputs.addNamedOutput(job,"vector",TextOutputFormat.class,Text.class,Text.class);
+    FileOutputFormat.setOutputPath(job, new Path("/user/root/output/out"+String.valueOf(index+1)));
+    return (job.waitForCompletion(true) ? 0 : 1);
     }
 }
