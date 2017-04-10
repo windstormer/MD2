@@ -19,36 +19,26 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 public class PageRank {
 
-    private static boolean flag = false;
-    private static int MaxNode=0;
     public static class MatrixMapper
     extends Mapper<Object, Text, Text, Text>{
 
         public void map(Object key,  Text value, Context context
             ) throws IOException, InterruptedException {
-            String[] itr = value.toString().split("\t");
-            if(Integer.parseInt(itr[0])>=Integer.parseInt(itr[1]))
-            {
-                if(Integer.parseInt(itr[0])>MaxNode)
-                    MaxNode = Integer.parseInt(itr[0]);
-            }else
-            {
-                if(Integer.parseInt(itr[1])>MaxNode)
-                    MaxNode = Integer.parseInt(itr[1]);
-            }
 
+
+            String[] itr = value.toString().split("\t");
 
             context.write(new Text(itr[0]),new Text(itr[1]));
+            context.write(new Text("Record"),new Text(itr[0]+","+itr[1]));
 
         }
     }
 
     public static class FormattedReducer
-    extends Reducer<Text,Text,Text,Text> {
+    extends Reducer<Text,Text,Text,Text>{
         private MultipleOutputs mos;
         private Text K;
         private Text V;
-        private Boolean[] check;
         public void setup(Context context)
         {
             mos = new MultipleOutputs(context);
@@ -57,39 +47,64 @@ public class PageRank {
             Context context
             ) throws IOException, InterruptedException {
             int count=0;
-            check = new Boolean[MaxNode];
-            String[] temp = new String[Node];
-            for (Text val : values) {
+            if(!key.toString().equals("Record"))
+            {
+                String[] temp = new String[50000];
+                for (Text val : values) {
 
-                temp[count] = val.toString();
-                count++;
-            }
-            for(int i=0;i<count;i++)
-            {
-                K = new Text(temp[i]+","+key.toString());
-                V = new Text(new Float(1.0f/((float)count)).toString());
-                mos.write("matrix",K,V,"matrix");
-            }
-            
-            if(!flag)
-            {
+                    temp[count] = val.toString();
+                    count++;
+                }
                 for(int i=0;i<count;i++)
                 {
-                    K = new Text(String.valueOf(i+1));
+                    K = new Text(temp[i]+","+key.toString());
                     V = new Text(new Float(1.0f/((float)count)).toString());
-                    mos.write("vector",K,V,"vector");
+                    mos.write("matrix",K,V,"matrix");
                 }
-                flag = true;
+
+            }else
+            {
+                int MaxNode=0;
+                boolean[] check = new boolean[50000];
+                for(Text val : values)
+                {
+                    String[] itr = val.toString().split(",");
+                    check[Integer.parseInt(itr[0])]=true;
+                    check[Integer.parseInt(itr[1])]=true;
+                    if(Integer.parseInt(itr[0])>MaxNode)
+                        MaxNode = Integer.parseInt(itr[0]);
+
+                    if(Integer.parseInt(itr[1])>MaxNode)
+                        MaxNode = Integer.parseInt(itr[1]);
+                    
+                }
+
+
+                int totalnode=0;
+                for(int i=0;i<=MaxNode;i++)
+                {
+                    if(check[i]==true)
+                        totalnode++;
+                }
+                for(int i=0;i<=MaxNode;i++)
+                {
+                    if(check[i]==true)
+                    {
+                        K = new Text(String.valueOf(i));
+                        V = new Text(new Float(1.0f/((float)totalnode)).toString());
+                        mos.write("vector",K,V,"vector");
+                    }
+                    
+                }
             }
-            
             
         }
         public void cleanup(Context context) throws IOException, InterruptedException{
-         mos.close(); 
-     }
- }
+           mos.close(); 
+       }
+   }
 
- public static void main(String[] args) throws Exception {
+   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
     if (otherArgs.length != 2) {
@@ -97,7 +112,7 @@ public class PageRank {
         System.exit(2);
     }
     conf.set("mapred.textoutputformat.separator", ",");
-    Job job = new Job(conf, "word count");
+    Job job = new Job(conf, "page rank");
     job.setJarByClass(PageRank.class);
     job.setMapperClass(MatrixMapper.class);
     //job.setCombinerClass(IntSumReducer.class);
