@@ -56,14 +56,7 @@ public class MatVecMulti {
 public static class MultiReducer
         extends Reducer<Text,Text,Text,Text> {
     private Text word;
-    MultipleOutputs mos;
-    public void setup(Context context)
-        {
-            mos = new MultipleOutputs(context);
-        }
-        public void cleanup(Context context) throws IOException, InterruptedException{
-           mos.close(); 
-       }
+ 
     public void reduce(Text key, Iterable<Text> values,
                         Context context
                         ) throws IOException, InterruptedException {
@@ -99,15 +92,15 @@ public static class MultiReducer
             }
         }
 
-        word = new Text(Float.toString(sum*0.8f));
+        word = new Text(Float.toString(sum));
 
         // word = new Text(s.substring(0,s.length()-1));
-        mos.write("vector",key, word,"vector");
+        context.write(key, word);
     }
 }
 
 
-public static int main(int index) throws Exception {
+public static void main(int index) throws Exception {
     Configuration conf = new Configuration();
     conf.set("mapred.textoutputformat.separator", ",");
     Job job = new Job(conf, "Matrix Vector Multiplication");
@@ -124,8 +117,9 @@ public static int main(int index) throws Exception {
 
     MultipleInputs.addInputPath(job,inPath1,TextInputFormat.class, MatrixMapper.class);
     MultipleInputs.addInputPath(job,inPath2,TextInputFormat.class, VectorMapper.class);
-    MultipleOutputs.addNamedOutput(job,"vector",TextOutputFormat.class,Text.class,Text.class);
-    FileOutputFormat.setOutputPath(job, new Path("/user/root/output/out"+String.valueOf(index+1)));
-    return (job.waitForCompletion(true) ? 0 : 1);
+    FileOutputFormat.setOutputPath(job, new Path("/user/root/output/temp"+String.valueOf(index)));
+    job.waitForCompletion(true);
+    FixValue.main(index);
+    return ;
     }
 }

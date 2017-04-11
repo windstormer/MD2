@@ -136,10 +136,10 @@ public class PageRank {
     FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
     // System.exit(job.waitForCompletion(true) ? 0 : 1);
     job.waitForCompletion(true);
-    // for(int i=1;i<=20;i++)
-    // {
-         MatVecMulti.main(1);
-    // }
+    for(int i=1;i<=10;i++)
+    {
+        MatVecMulti.main(i);
+    }
 
     System.exit(0);
 }
