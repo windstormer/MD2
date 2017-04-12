@@ -24,13 +24,13 @@ public class OutputFomatted {
 
         public void map(Object key,  Text value, Context context
             ) throws IOException, InterruptedException {
-
-
             String[] itr = value.toString().split(",");
             for(int i=0;i<itr.length-1;i+=2)
             {
-                context.write(new Text(itr[i]),new Text(itr[i+1]));
+                context.write(new Text(itr[i]),new Text(String.format("%.3f",Float.parseFloat(itr[i+1]))));
             }
+
+            
         }
     }
 
@@ -52,7 +52,7 @@ public class OutputFomatted {
 public static void main(int index) throws Exception {
     Configuration conf = new Configuration();
     conf.set("mapred.textoutputformat.separator", "\t");
-    Job job = new Job(conf, "sort output");
+    Job job = new Job(conf, "OutputFomatted");
     job.setJarByClass(OutputFomatted.class);
     job.setMapperClass(SplitMapper.class);
     //job.setCombinerClass(IntSumReducer.class);

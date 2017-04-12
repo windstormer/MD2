@@ -116,8 +116,8 @@ public class PageRank {
    public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-    if (otherArgs.length != 2) {
-        System.err.println("Usage: wordcount <in> <out>");
+    if (otherArgs.length != 3) {
+        System.err.println("Usage: wordcount <in> <out> <iteration>");
         System.exit(2);
     }
     conf.set("mapred.textoutputformat.separator", ",");
@@ -136,13 +136,12 @@ public class PageRank {
     FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
     // System.exit(job.waitForCompletion(true) ? 0 : 1);
     job.waitForCompletion(true);
-    int iteration=20;
+    int iteration=Integer.parseInt(otherArgs[2]);
     for(int i=1;i<=iteration;i++)
     {
         MatVecMulti.main(i);
     }
     OutputFomatted.main(iteration);
-    SortOutput.main(iteration);
     System.exit(0);
 }
 }

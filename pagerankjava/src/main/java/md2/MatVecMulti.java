@@ -103,7 +103,7 @@ public static class MultiReducer
 public static void main(int index) throws Exception {
     Configuration conf = new Configuration();
     conf.set("mapred.textoutputformat.separator", ",");
-    Job job = new Job(conf, "Matrix Vector Multiplication");
+    Job job = new Job(conf, "Matrix Vector Multiplication "+String.valueOf(index));
     Path inPath1 = new Path("/user/root/output/out1/matrix-r-00000");
     Path inPath2 = new Path("/user/root/output/out"+String.valueOf(index)+"/vector-r-00000");
     job.setJarByClass(MatVecMulti.class);

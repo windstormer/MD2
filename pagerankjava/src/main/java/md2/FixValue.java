@@ -84,7 +84,7 @@ public class FixValue {
 public static void main(int index) throws Exception {
     Configuration conf = new Configuration();
     conf.set("mapred.textoutputformat.separator", ",");
-    Job job = new Job(conf, "fix value");
+    Job job = new Job(conf, "fix value "+ String.valueOf(index));
     job.setJarByClass(FixValue.class);
     job.setMapperClass(ConnectMapper.class);
     //job.setCombinerClass(IntSumReducer.class);
