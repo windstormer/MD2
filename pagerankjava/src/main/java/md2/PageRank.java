@@ -157,7 +157,7 @@ public class PageRank {
         int iteration=Integer.parseInt(otherArgs[2]);
         for(int i=1;i<=iteration;i++)
         {
-            MatVecMulti.main(i);
+             MatVecMulti.main(i);
         }
         OutputFomatted.main(iteration);
         System.exit(0);

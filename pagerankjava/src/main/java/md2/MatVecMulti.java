@@ -39,7 +39,17 @@ public class MatVecMulti {
 
         public void map(Object key,  Text value, Context context
             ) throws IOException, InterruptedException {
+            Vector<String> vv = new Vector<String>();
+            vv.setSize(50000);
             String[] itr = value.toString().split(",");
+            for(int i=0;i<itr.length-1;i+=3)
+            {
+                vv.set(Integer.parseInt(itr[i]),itr[i+1]);
+                if(itr[i+2].equals("Y"))
+                {
+                    i++;
+                }
+            }
             for(int i=0;i<itr.length-1;i+=3)
             {
                 if(itr[i+2].equals("Y"))
@@ -49,7 +59,7 @@ public class MatVecMulti {
                     for(int j=0;j<connect.length;j++)
                     {
                         // context.write(new Text(itr[i]),new Text(s+":"+connect[j]));
-                        context.write(new Text(itr[i]),new Text("R"+","+connect[j]+","+itr[i+1]));
+                        context.write(new Text(itr[i]),new Text("R"+","+connect[j]+","+vv.get(Integer.parseInt(connect[j]))));
                     }
                     i++;
                 }
