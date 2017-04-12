@@ -22,46 +22,64 @@ import org.apache.hadoop.util.GenericOptionsParser;
 public class MatVecMulti {
 
     public static class MatrixMapper
-        extends Mapper<Object, Text, Text, Text>{
+    extends Mapper<Object, Text, Text, Text>{
 
-    public void map(Object key,  Text value, Context context
-                    ) throws IOException, InterruptedException {
-        String[] itr = value.toString().split(",");
+        public void map(Object key,  Text value, Context context
+            ) throws IOException, InterruptedException {
+            String[] itr = value.toString().split(",");
 
-        String temp = itr[0];
-        context.write(new Text(itr[0]),new Text("M"+","+itr[1]+","+itr[2]));
-        
-    }
-}
-    public static class VectorMapper
-        extends Mapper<Object, Text, Text, Text>{
+            String temp = itr[0];
+            context.write(new Text(itr[0]),new Text("M"+","+itr[1]+","+itr[2]));
 
-
-    public void map(Object key,  Text value, Context context
-                    ) throws IOException, InterruptedException {
-        String[] itr = value.toString().split(",");
-        for(int i=0;i<itr.length-1;i+=2)
-        {
-            for(int j=0;j<itr.length-1;j+=2)
-            {
-                context.write(new Text(itr[j]),new Text("R"+","+itr[i]+","+itr[i+1]));
-            }
         }
-        
-        
     }
-}
+    public static class VectorMapper
+    extends Mapper<Object, Text, Text, Text>{
 
 
-public static class MultiReducer
-        extends Reducer<Text,Text,Text,Text> {
-    private Text word;
- 
-    public void reduce(Text key, Iterable<Text> values,
-                        Context context
-                        ) throws IOException, InterruptedException {
+        public void map(Object key,  Text value, Context context
+            ) throws IOException, InterruptedException {
+            String[] itr = value.toString().split(",");
+            for(int i=0;i<itr.length-1;i+=3)
+            {
+                if(itr[i+2].equals("Y"))
+                {
+                    String s = new String(itr[i+3]);
+                    String[] connect = s.split("\\|");
+                    for(int j=0;j<connect.length;j++)
+                    {
+                        // context.write(new Text(itr[i]),new Text(s+":"+connect[j]));
+                        context.write(new Text(itr[i]),new Text("R"+","+connect[j]+","+itr[i+1]));
+                    }
+                    i++;
+                }
+
+
+            }
+
+
+        }
+    }
+
+
+    public static class MultiReducer
+    extends Reducer<Text,Text,Text,Text> {
+        private Text word;
+        private Text cword;
+        private MultipleOutputs mos;
+
+        public void setup(Context context)
+        {
+            mos = new MultipleOutputs(context);
+        }
+        public void cleanup(Context context) throws IOException, InterruptedException{
+         mos.close(); 
+     }
+     public void reduce(Text key, Iterable<Text> values,
+        Context context
+        ) throws IOException, InterruptedException {
         String[] splitVal;
-        
+
 
         String[] M = new String[50000];
         String[] R = new String[50000];
@@ -78,25 +96,38 @@ public static class MultiReducer
                 if(Mindex < Integer.parseInt(splitVal[1]))
                     Mindex = Integer.parseInt(splitVal[1]);
             }
-
+            // context.write(key,val);
         }
         String s="";
         float sum = 0.0f;
+        ArrayList<Integer> connect = new ArrayList<Integer>();
         for(int i=0;i<=Mindex;i++)
         {
-            // s+=String.valueOf(i)+":"+M[i]+"|"+R[i]+", ";
-            if(M[i]!=null)
-            {
-                
-                 sum+=Float.parseFloat(M[i])*Float.parseFloat(R[i]);
-            }
-        }
+          s+=String.valueOf(i)+":"+M[i]+"|"+R[i]+", ";
+          if(M[i]!=null)
+          {
 
-        word = new Text(Float.toString(sum));
-
-        // word = new Text(s.substring(0,s.length()-1));
-        context.write(key, word);
+             sum+=Float.parseFloat(M[i])*Float.parseFloat(R[i]);
+             connect.add(new Integer(i));
+         }
+     }
+     String out="";
+     out+=Float.toString(sum)+",";
+     if(connect.size()>0)
+        out+="Y,";
+    for(int i=0;i<connect.size();i++)
+    {
+        out+=connect.get(i).toString();
+        if(i!=connect.size()-1)
+            out+="|";
     }
+    word = new Text(out);
+
+    cword = new Text(s.substring(0,s.length()-1));
+    mos.write("check",key,cword,"check");
+
+    mos.write("temp",key, word,"temp");
+}
 }
 
 
@@ -117,9 +148,12 @@ public static void main(int index) throws Exception {
 
     MultipleInputs.addInputPath(job,inPath1,TextInputFormat.class, MatrixMapper.class);
     MultipleInputs.addInputPath(job,inPath2,TextInputFormat.class, VectorMapper.class);
+    MultipleOutputs.addNamedOutput(job,"check",TextOutputFormat.class,Text.class,Text.class);
+    MultipleOutputs.addNamedOutput(job,"temp",TextOutputFormat.class,Text.class,Text.class);
+
     FileOutputFormat.setOutputPath(job, new Path("/user/root/output/temp"+String.valueOf(index)));
     job.waitForCompletion(true);
     FixValue.main(index);
     return ;
-    }
+}
 }

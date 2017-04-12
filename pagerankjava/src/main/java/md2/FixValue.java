@@ -25,10 +25,7 @@ public class FixValue {
         public void map(Object key,  Text value, Context context
             ) throws IOException, InterruptedException {
 
-
-            String[] itr = value.toString().split(",");
-
-            context.write(new Text("Connect"),new Text(itr[0]+","+itr[1]));
+            context.write(new Text("Connect"),value);
 
         }
     }
@@ -69,7 +66,10 @@ public class FixValue {
             String Ks,Vs;
             Ks = record.get(i)[0];
             Vs = new Float(Float.parseFloat(record.get(i)[1])*BETA+fix).toString();
-            out +=(Ks+","+Vs+",");
+            if(record.get(i)[2].equals("N"))
+                out +=(Ks+","+Vs+","+record.get(i)[2]+",");
+            else
+                out+=(Ks+","+Vs+","+record.get(i)[2]+","+record.get(i)[3]+",");
             
             // context.write(K,V);
         }
@@ -94,7 +94,7 @@ public static void main(int index) throws Exception {
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
     MultipleOutputs.addNamedOutput(job,"vector",TextOutputFormat.class,Text.class,Text.class);
-    FileInputFormat.addInputPath(job, new Path("/user/root/output/temp"+String.valueOf(index)+"/part-r-00000"));
+    FileInputFormat.addInputPath(job, new Path("/user/root/output/temp"+String.valueOf(index)+"/temp-r-00000"));
     FileOutputFormat.setOutputPath(job, new Path("/user/root/output/out"+String.valueOf(index+1)));
     // System.exit(job.waitForCompletion(true) ? 0 : 1);
     job.waitForCompletion(true);
