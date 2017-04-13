@@ -27,7 +27,7 @@ public class OutputFomatted {
             String[] itr = value.toString().split(",");
             for(int i=0;i<itr.length-1;i+=3)
             {
-                context.write(new Text(itr[i]),new Text(String.format("%.3f",Float.parseFloat(itr[i+1]))));
+                context.write(new Text(itr[i]),new Text(String.format("%.12f",Float.parseFloat(itr[i+1]))));
                 if(itr[i+2].equals("Y")) i++;
             }
 

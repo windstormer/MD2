@@ -62,7 +62,8 @@ public class MatVecMulti {
                         context.write(new Text(itr[i]),new Text("R"+","+connect[j]+","+vv.get(Integer.parseInt(connect[j]))));
                     }
                     i++;
-                }
+                }else
+                context.write(new Text(itr[i]),new Text("R"+","+vv.get(Integer.parseInt(itr[i]))));
 
 
             }
@@ -90,7 +91,7 @@ public class MatVecMulti {
         ) throws IOException, InterruptedException {
         String[] splitVal;
 
-
+        String temp = new String("0.0f");
         String[] M = new String[50000];
         String[] R = new String[50000];
         int Mindex=0;
@@ -98,8 +99,10 @@ public class MatVecMulti {
             splitVal = val.toString().split(",");
             if(splitVal[0].equals("R"))
             {
-
+                if(splitVal.length>2)
                 R[Integer.parseInt(splitVal[1])]=splitVal[2];
+            else
+                temp = new String(splitVal[1]);
             }else if(splitVal[0].equals("M"))
             {
                 M[Integer.parseInt(splitVal[1])]=splitVal[2];
@@ -113,7 +116,7 @@ public class MatVecMulti {
         ArrayList<Integer> connect = new ArrayList<Integer>();
         for(int i=0;i<=Mindex;i++)
         {
-          s+=String.valueOf(i)+":"+M[i]+"|"+R[i]+", ";
+          // s+=String.valueOf(i)+":"+M[i]+"|"+R[i]+", ";
           if(M[i]!=null)
           {
 
@@ -122,9 +125,12 @@ public class MatVecMulti {
          }
      }
      String out="";
+     if(sum==0.0f)
+        sum = Float.parseFloat(temp);
      out+=Float.toString(sum)+",";
      if(connect.size()>0)
         out+="Y,";
+    else out+="N,";
     for(int i=0;i<connect.size();i++)
     {
         out+=connect.get(i).toString();
@@ -133,8 +139,8 @@ public class MatVecMulti {
     }
     word = new Text(out);
 
-    cword = new Text(s.substring(0,s.length()-1));
-    mos.write("check",key,cword,"check");
+    // cword = new Text(s.substring(0,s.length()-1));
+    // mos.write("check",key,cword,"check");
 
     mos.write("temp",key, word,"temp");
 }
