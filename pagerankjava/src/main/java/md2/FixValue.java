@@ -35,7 +35,8 @@ public class FixValue {
         private MultipleOutputs mos;
         private Text K;
         private Text V;
-        private float BETA = 0.8f;
+        private double BETA = 0.8;
+        private double BETAP = (1.0-BETA);
         public void setup(Context context)
         {
             mos = new MultipleOutputs(context);
@@ -49,23 +50,28 @@ public class FixValue {
         ) throws IOException, InterruptedException {
         int count=0;
         String[] itr;
-        float cursum=0.0f;
+        double cursum=0.0;
         ArrayList<String[]> record = new ArrayList<String[]>();
         for( Text val : values)
         {
             count++;
             itr = val.toString().split(",");
             record.add(itr);
-            cursum+= (Float.parseFloat(itr[1])*BETA);
+            
         }
-        float fix = (1.0f-cursum)/((float)count);
+        for(int i=0;i<record.size();i++)
+        {
+            cursum+= (Double.parseDouble(record.get(i)[1])*BETA+(1.0/(double)count)*BETAP);
+        }
+        
+        double fix = (1.0-cursum)/((double)count);
         String out="";
         for(int i=0;i<record.size();i++)
         {
             
             String Ks,Vs;
             Ks = record.get(i)[0];
-            Vs = new Float(Float.parseFloat(record.get(i)[1])*BETA+fix).toString();
+            Vs = new Double(Double.parseDouble(record.get(i)[1])*BETA+fix+(1.0/(double)count)*BETAP).toString();
             if(record.get(i)[2].equals("N"))
                 out +=(Ks+","+Vs+","+record.get(i)[2]+",");
             else

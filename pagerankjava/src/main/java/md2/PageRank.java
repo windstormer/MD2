@@ -61,7 +61,7 @@ public class PageRank {
             for(int i=0;i<count;i++)
             {
                 K = new Text(temp[i]+","+key.toString());
-                V = new Text(new Float(1.0f/((float)count)).toString());
+                V = new Text(new Double(1.0/((double)count)).toString());
                 mos.write("matrix",K,V,"matrix");
             }
 
@@ -102,7 +102,7 @@ public class PageRank {
                 {
                     String Ks,Vs;
                     Ks = String.valueOf(i);
-                    Vs = new Float(1.0f/((float)totalnode)).toString();
+                    Vs = new Double(1.0f/((double)totalnode)).toString();
                     out+=(Ks+","+Vs+",");
                     if(match.get(i)!=null)
                         {

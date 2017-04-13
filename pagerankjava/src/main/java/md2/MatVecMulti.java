@@ -112,7 +112,7 @@ public class MatVecMulti {
             // context.write(key,val);
         }
         String s="";
-        float sum = 0.0f;
+        double sum = 0.0;
         ArrayList<Integer> connect = new ArrayList<Integer>();
         for(int i=0;i<=Mindex;i++)
         {
@@ -120,14 +120,12 @@ public class MatVecMulti {
           if(M[i]!=null)
           {
 
-             sum+=Float.parseFloat(M[i])*Float.parseFloat(R[i]);
+             sum+=Double.parseDouble(M[i])*Double.parseDouble(R[i]);
              connect.add(new Integer(i));
          }
      }
      String out="";
-     if(sum==0.0f)
-        sum = Float.parseFloat(temp);
-     out+=Float.toString(sum)+",";
+     out+=Double.toString(sum)+",";
      if(connect.size()>0)
         out+="Y,";
     else out+="N,";
